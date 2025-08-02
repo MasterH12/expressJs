@@ -5,7 +5,10 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --watch app.js"
+    "start": "node --watch app.js",
+    "seed": "node scripts/seed.js",
+    "seed:advanced": "node scripts/advanced-seed.js",
+    "db:reset": "npx prisma migrate reset --force && npm run seed"
   },
   "keywords": [
     "express"
@@ -13,8 +16,13 @@
   "author": "Alexander Oses",
   "license": "MIT",
   "dependencies": {
+    "@prisma/client": "^6.13.0",
     "body-parser": "^2.2.0",
     "dotenv": "^17.2.1",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "prisma": "^6.13.0"
   }
 }

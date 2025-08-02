@@ -1,5 +1,7 @@
 require("dotenv").config();
 const express = require("express");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 const fs = require("fs");
 const path = require("path");
@@ -7,8 +9,16 @@ const usersFile = path.join(__dirname, "users.json");
 const { validateUserData, validateUrlId } = require("./utils/validations");
 
 const app = express();
+
+// Importar middlewares
+const loggerMiddleware = require('./middlewares/logger');
+const errorHandler = require('./middlewares/errorHandler');
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Usar el middleware de logger para todas las rutas
+app.use(loggerMiddleware);
 
 const PORT = process.env.PORT || 3000;
 
@@ -277,6 +287,84 @@ app.delete("/users/:id", (req, res) => {
         }
     });
 });
+
+// Ruta de ejemplo para probar el error handler
+app.get("/test-error", (req, res, next) => {
+    // Crear un error intencional para probar
+    const error = new Error("Este es un error de prueba");
+    error.statusCode = 500;
+    next(error); // Pasar el error al error handler
+});
+
+app.get("/db-users", async (req, res, next) => {
+    try {
+        // Obtener todos los usuarios desde la base de datos usando Prisma
+        const users = await prisma.user.findMany({
+            orderBy: {
+                id: 'asc'
+            }
+        });
+
+        res.json({
+            message: "Usuarios obtenidos exitosamente",
+            count: users.length,
+            data: users
+        });
+    } catch (error) {
+        // Pasar el error al error handler
+        error.statusCode = 500;
+        next(error);
+    }
+});
+
+app.post("/db-users", async (req, res, next) => {
+    try {
+        const { name, email } = req.body;
+
+        // Validar datos usando las validaciones existentes
+        const errors = validateUserData({ name, email });
+
+        // Si hay errores de validación, devolver error 422
+        if (errors.length > 0) {
+            return res.status(422).json({
+                error: "Datos mal formateados",
+                errores: errors
+            });
+        }
+
+        // Crear el usuario en la base de datos usando Prisma
+        const newUser = await prisma.user.create({
+            data: {
+                name: name,
+                email: email
+            }
+        });
+
+        // Devolver el usuario creado con status 201
+        res.status(201).json({
+            message: "Usuario creado exitosamente",
+            data: newUser
+        });
+
+    } catch (error) {
+        // Manejar errores específicos de Prisma
+        if (error.code === 'P2002') {
+            // Error de constraint único (email duplicado)
+            return res.status(409).json({
+                error: "Email ya existe",
+                message: "Ya existe un usuario con este email",
+                field: "email"
+            });
+        }
+
+        // Para otros errores, pasar al error handler
+        error.statusCode = 500;
+        next(error);
+    }
+});
+
+// Middleware de manejo de errores (debe ir al final, después de todas las rutas)
+app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.info("Aplicacion funcionando en puerto ", PORT);
