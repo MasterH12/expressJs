@@ -1,5 +1,7 @@
 PORT = 3000
 NODE_ENV = "development" || "production"
 
-DB_USER = ""
-DB_PASSWORD = ""
+DATABASE_URL = "postgresql://user:password@localhost:5432/dbName?schema=public"
+
+JWT_SECRET=""
+JWT_EXPIRES_IN="24h"

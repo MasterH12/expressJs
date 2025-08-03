@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --watch app.js",
+    "start": "node --watch src/server.js",
     "seed": "node scripts/seed.js",
     "seed:advanced": "node scripts/advanced-seed.js",
     "db:reset": "npx prisma migrate reset --force && npm run seed"
